@@ -1,84 +1,106 @@
-import librosa as lb
-from librosa.feature import zero_crossing_rate
-from librosa.core import load
+from SpeechDetection.Frame import Frame
+from SpeechDetection.Classes import Classes
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy as sc
 import scipy.io.wavfile as wf
+import matplotlib.pyplot as plt
 
 class SpeechDetector():
 
-
-    def __init__(self, data, fs):
+    def __init__(self, data, fs, frame_duration, overlap_rate):
+        #self.Classes = Classes()
         self.data = data
+        self.frame_duration = frame_duration
+        #self.normalize_data()
         self.fs = fs # sampling frequency: Number of samples per second
-        self.windowed_frames()
-
-    # SHORT TIME ANALISYS
-    def split_into_frames(self, frame_length, overlap_rate):
-        # The audio is divided into frames
-        shift = 1 - overlap_rate
-        frame_shift = round(self.frame_length * shift)  # shift length in samples: hop_length
-        frame_list = lb.util.frame(x = self.data, frame_length= self.frame_length, hop_length= frame_shift, axis=0)  # matrix: each row represents a frame
-        return frame_list
-
-    def windowed_frames(self, duration= 30, overlap_rate= 0.5, window_type= "hamm"):
-        # The audio is divided into frames and a windows is applied to each of them
-        """
-        :param duration: frame duration in msec
-        :param overlap_rate: how much a frame overlap with the next one (percentage)
-        :param window_type: the type of of window applied to each frame
-        """
-        self.frame_length = int(np.floor(duration * self.fs / 1000))  # frame length (in samples) s -> msec
-
-        frame_list = self.split_into_frames(self.frame_length, overlap_rate)
-        window_filter = lb.filters.get_window(window=window_type, Nx=self.frame_length, fftbins=False)
-
-        self.windowed_frame_list = np.multiply(frame_list, window_filter)#[np.multiply(frame, window_filter) for frame in frame_list] # windowing the frames
-
+        self.Frames = Frame(self.data, fs, frame_duration, overlap_rate)
 
     def normalize_data(self):
         # normalize the data
-        self.data = self.data / max(self.data)
+        self.data = self.data / max(self.data) #self.data - np.mean(self.data)
 
-    def ZCR(self):
-        # return the zero crossing rate for each (overlapping) frame
-        frameWind_list = self.windowed_frame_list
-        return [ np.sum(abs(np.diff(np.sign(frameWind-np.mean(frameWind)))))/(2*self.frame_length) for frameWind in frameWind_list]
+    def refine_label(self,labeled_frames, label_to_be_replaced, labele_used_to_replace, num_frames ):
+        idx_start = 0  # start of speech/non-speech segment
+        idx_end = 0  # end of speech/non-speech segment
 
-    def Energy(self):
-        # return the energy for each (overlapping) frame
-        frameWind_list = self.windowed_frame_list
-        return [sum(frameWind ** 2)/len(frameWind) for frameWind in frameWind_list]
+        idx_range = range(len(labeled_frames))
+        for idx in idx_range:
+            frame = labeled_frames[idx]
+            if frame == label_to_be_replaced : # is the label to refined
+                if idx_end == 0: # is the start of the segments
+                    idx_start = idx
+            else:
+                idx_end = idx-1 # the end of the segment
+                if idx_end - idx_start < num_frames: # to be ignored
+                    for idx_sub in range(idx_start, idx_end+1):
+                        labeled_frames[idx_sub] = labele_used_to_replace
+                    idx_end = 0
 
-    def MSE_Energy(self):
-        # return the mean square error of the energy for each (overlapping) frame
-        energy_list = self.Energy()
-        return [np.sqrt(energy) for energy in energy_list]
+        return labeled_frames
+
+    def refining(self, labeled_frames):
+
+        refined_labels = np.copy(labeled_frames)
+
+        # Ignore silence run less than 10 successive frames
+        refined_labels = self.refine_label(refined_labels, Classes.NONSPEECH, Classes.SPEECH, 10)
+
+        # Ignore speech run less than 5 successive frames
+        refined_labels = self.refine_label(refined_labels, Classes.SPEECH, Classes.NONSPEECH, 5)
+
+        return refined_labels
+
+    def thresholding(self):
+        # initialization
+        frame_list = self.Frames.frame_list
+        sfm_list = self.Frames.SFM()
+        energy_list = self.Frames.Energy()
+        max_freq_list = self.Frames.Max_Freq()
+
+        threshold_sfm = 5
+        init_threshold_energy = 40 #np.mean(energy_list[:100//self.frame_duration]) #40 # mean of the first 100ms to estimate the noise
+        threshold_freq = 185
+
+        labeled_frames = []
+
+        buffer_dim = 10 #  Supposing that some of the first 30 frames are silence
+        min_energy = min(energy_list[:buffer_dim]) # assuming there are at least 30 frames
+        min_sfm = min(sfm_list[:buffer_dim]) # assuming there are at least 30 frames
+        min_freq = min(max_freq_list[:buffer_dim])
+
+        th_energy = 0
+        silence_counter = 0
+
+        for i, (frameWind, sfm, energy, max_freq) in enumerate(zip(frame_list, sfm_list, energy_list, max_freq_list)):
+            th_energy = init_threshold_energy * np.log(min_energy)
+            count = 0
+            if (energy - min_energy) >= th_energy:
+                count += 1
+
+            if (sfm - min_sfm) >= threshold_sfm:
+                count += 1
+
+            if (max_freq - min_freq) >= threshold_freq:
+                count += 1
+
+            if count > 1:
+                # is speech
+                labeled_frames.append(Classes.SPEECH)
+            else:
+                # is non-speech
+                silence_counter += 1
+                labeled_frames.append(Classes.NONSPEECH)
+                min_energy = ((silence_counter * min_energy) + energy)/(silence_counter + 1)
+                #th_energy = init_threshold_energy * np.log(min_energy) # threshold updated
+
+        return labeled_frames, frame_list
 
     def isSpeech(self):
-       # assign to each frame if it is speech or non-speech
-       threshold_zcr = 0.2 # per ora molto a caso
-       threshold_energy = 0.2 # per ora a casissimo
+        # assign to each frame if it is speech or non-speech
+        labeled_frames, frame_list = self.thresholding()
 
-       frameWind_list = self.windowed_frame_list
-       zcr_list = self.ZCR()
-       energy_list = self.Energy()
-
-       isSpeech_list = []
-
-       # per ora molto base schifo
-       for frameWind, zcr, energy in zip(frameWind_list, zcr_list, energy_list):
-
-           if zcr > threshold_zcr and energy > threshold_energy:
-               # is speech
-               isSpeech_list.append([ 1 for _ in frameWind])
-           else:
-               # is non-speech
-               isSpeech_list.append([ 0 for _ in frameWind])
-
-       self.isSpeech_list = np.array(isSpeech_list).flatten() # list containing the results
-
-fs, data = wf.read('FSA1.wav')
-#data, fs = load(lb.util.example_audio_file())
-print(fs)
-iss = SpeechDetector(data, fs)
+        # refining
+        labeled_frames = self.refining(labeled_frames)
+        self.labeled_frames = np.array(labeled_frames) # list containing the results
+        return self.labeled_frames, frame_list
