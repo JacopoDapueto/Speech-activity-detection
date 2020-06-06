@@ -3,29 +3,29 @@ import pickle
 import os
 import tensorflow as tf
 import numpy as np
-
+import keras
 from sklearn.metrics import balanced_accuracy_score
 from keras.models import model_from_json
 from  tensorflow.keras import regularizers
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-
+os
 class Network():
     # Implementation of a simple neural network
+    FILELENGTH = 10
 
-    def __init__(self, input_shape, optimizer='adam', loss='binary_crossentropy', metrics='accuracy'):
+    def __init__(self, input_shape=17, optimizer='adam', loss='binary_crossentropy', metrics='accuracy'):
         self.trained = False
         self.model = Sequential()
         self.input_shape = input_shape
-        self.model_path = "Model\\model.json"
-        self.weights_path = "Weights\\weights.h5"
-        self.history_path = "History\\historyDict"
+        self.model_path = os.path.join(str(__file__)[:-Network.FILELENGTH],  "Model\\model.json")
+        self.weights_path = os.path.join(str(__file__)[:-Network.FILELENGTH], "Weights\\model.h5")
+        self.history_path = os.path.join(str(__file__)[:-Network.FILELENGTH], "History\\historyDict")
         self.checkpoint_path = "Checkpoint/cp.ckpt"
         self.optimizer = optimizer
         self.loss = loss
         self.metrics = metrics
-
 
     def createModel(self):
         # Add a Dense layer with 32 neurons, with relu as activation function and input dimension equal to the number of features
@@ -47,11 +47,14 @@ class Network():
         self.history = self.model.fit(X, y, batch_size=batch_size, epochs=epochs, shuffle=True, validation_split=0.3, callbacks=[es_callback, cp_callback])
         self.trained = True
 
+    def balance_accuracy(self, y_pred, ytest):
+        return balanced_accuracy_score(y_pred, ytest)
+
     def testModel(self, Xtest, ytest):
         if not self.trained:
             raise Exception("The network is not trained yet!")
         y_pred = (self.model.predict(Xtest) > 0.5).astype("int32")
-        return balanced_accuracy_score(y_pred, ytest)
+        return self.balance_accuracy(y_pred, ytest)
 
     def predictLabel(self, data):
         """
@@ -60,7 +63,7 @@ class Network():
         """
         if not self.trained:
             raise Exception("The network is not trained yet!")
-        return self.model.predict_classes(data)
+        return (self.model.predict(data) > 0.5).astype("int32")
 
     def saveModel(self):
         model_json = self.model.to_json()
@@ -81,11 +84,16 @@ class Network():
     def loadWeights(self):
         self.model.load_weights(self.weights_path)
 
+    def saveNetwork(self):
+        self.saveModel()
+        self.saveWeights()
+        print("Network saved correctely!")
     def loadNetwork(self):
-        self.loadModel()
+        self.createModel()
         self.loadWeights()
         self.compileModel()
         self.trained = True
+        print("Network loaded correctely!")
 
     def saveHistory(self):
         if not self.trained:

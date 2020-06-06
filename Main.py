@@ -1,8 +1,5 @@
-
-FRAMEDURATION = 30
-OVERLAPRATE = 0.0
-
-
+from GUI import GUI
 
 if __name__ == '__main__':
-    pass
+    app = GUI.Gui()
+    app.mainloop()

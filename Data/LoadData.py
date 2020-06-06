@@ -3,7 +3,7 @@ import numpy as np
 import scipy.io.wavfile as wf
 from sklearn.model_selection import train_test_split
 
-import Main
+import CONFIG
 from SpeechDetection.Frame import Frame
 from Utils.Utils import createSample
 from Utils.Gender import Gender
@@ -48,22 +48,22 @@ class LoadData():
 
         return female_list_path, male_list_path
 
-    def samplePerGender(self, audio_list, annotation_list, gender):
+    def samplePerGender(self, audio_list, annotation_list):
 
         if len(audio_list) != len(annotation_list):
             raise Exception("Each audio should have its own annotation file!")
 
-        loadAnnotation = ReadTextGrid(os.path.join(self.root, self.annotation_name), Main.FRAMEDURATION)
+        loadAnnotation = ReadTextGrid(os.path.join(self.root, self.annotation_name), CONFIG.FRAMEDURATION)
         first = True
 
         for audio_path, annotation_path in zip(audio_list, annotation_list):
             fs, data = wf.read(audio_path)
             data = np.array(data, dtype=np.float)
-            frames = Frame(data, fs, Main.FRAMEDURATION, Main.OVERLAPRATE)
+
+            frames = Frame(data, fs, CONFIG.FRAMEDURATION, CONFIG.OVERLAPRATE)
             zcr_frames = frames.ZCR()
             energy_frames = frames.Energy()
             htn_frames = frames.HTN()
-            #sfm_frames = frames.SFM()
             magnitude_frames = frames.Magnitude()
             mfcc_frames = frames.MFCC()
 
@@ -79,11 +79,10 @@ class LoadData():
                     zcr_frames.pop(-1)
                     energy_frames.pop(-1)
                     htn_frames.pop(-1)
-                    #sfm_frames.pop(-1)
                     magnitude_frames.pop(-1)
                     mfcc_frames = np.delete(mfcc_frames, -1, axis=0)
 
-            sample = createSample(zcr_frames, energy_frames, htn_frames, magnitude_frames, mfcc_frames, gender)
+            sample = createSample(zcr_frames, energy_frames, htn_frames, magnitude_frames, mfcc_frames)
             if first:
                 datasetX = sample.copy()
                 datasetY = labeled_frames.copy()
@@ -100,10 +99,10 @@ class LoadData():
         female_annotation_list, male_annotation_list = self.getAnnotationPath()
 
         # female samples
-        female_sample, female_y = self.samplePerGender(female_audio_list, female_annotation_list, Gender.FEMALE)
+        female_sample, female_y = self.samplePerGender(female_audio_list, female_annotation_list)
 
         # male samples
-        male_sample, male_y = self.samplePerGender(male_audio_list, male_annotation_list, Gender.MALE)
+        male_sample, male_y = self.samplePerGender(male_audio_list, male_annotation_list)
 
         return np.vstack((female_sample, male_sample)), np.vstack((female_y, male_y))
 

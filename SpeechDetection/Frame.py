@@ -11,7 +11,7 @@ def nextpow2(x):
 class Frame():
 
     def __init__(self, data, fs, frame_duration, overlap_rate):
-        self.data = data
+        self.data=np.ascontiguousarray(data[:,0], dtype=np.float32) if data.shape == (len(data), 2) else data # dealing with multichannel audio, if any
         self.fs = fs
         self.windowed_frames(duration=frame_duration, overlap_rate= overlap_rate, window_type="hamm")
 

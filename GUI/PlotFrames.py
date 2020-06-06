@@ -1,6 +1,5 @@
 from Utils.Classes import Classes
-from Data.LoadData import LoadData
-from SpeechDetection.NeuralNetwork.Network import Network
+import librosa.display as display
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -9,53 +8,49 @@ class PlotFrames():
     def __init__(self, data, fs, frame_duration, overlap_rate, labeled_frames, title_plot):
         self.data = data
         self.fs = fs
-        self.labeled_frames = labeled_frames
+        self.labeled_frames = labeled_frames.reshape((len(labeled_frames),))
         self.frame_length = int(np.floor(frame_duration * self.fs / 1000))
         self.overlap_rate = overlap_rate
         self.title_plot = title_plot
 
-    def plot_segments(self, t, frame_shift):
-        t_frame_start = None
-        t_frame_end = None
-        for i, frame_labeled in enumerate(self.labeled_frames):
-            idx = i * frame_shift
-            t_frame = t[idx:idx + self.frame_length]
-
-            if (frame_labeled == Classes.SPEECH):
-                plt.axvspan(xmin= t[idx], xmax=t[idx + self.frame_length-1], ymin=-1000, ymax=1000, alpha=0.4, zorder=-100, facecolor='g', label='Speech')
-            #else:
-                #plt.axvspan(xmin=t[idx], xmax=t[idx + self.frame_length-1], ymin=-1000, ymax=1000, alpha=0.4, zorder=-100, facecolor='r', label='Non-Speech')
-
-    def plot_signal_and_segments(self):
-        Ns = len(self.data) # number of sample
+    def utilities(self):
+        Ns = len(self.data)  # number of sample
         Ts = 1 / self.fs  # sampling period
-        t = np.arange(Ns) * 1000 * Ts # time axis
-        plt.plot(t, self.data)
+        t = np.arange(Ns) * 1000 * Ts  # time axis
 
         shift = 1.0 - self.overlap_rate
         frame_shift = round(self.frame_length * shift)
-        self.plot_segments(t, frame_shift)
-        plt.legend(['Signal', 'Speech'])
-        plt.title(self.title_plot)
-        plt.show()
+        return t, frame_shift
 
-name = 'mic_F04_sx147'
+    def plot_segments(self, t, frame_shift, p):
 
-#fs, data = wf.read(name + '.wav')
+        for i, frame_labeled in enumerate(self.labeled_frames):
+            idx = i * frame_shift
+            if (frame_labeled == Classes.SPEECH):
+                p.axvspan(xmin= t[idx], xmax=t[idx + self.frame_length-1], ymin=-1000, ymax=1000, alpha=0.4, zorder=-100, facecolor='g', label='Speech')
 
-#data = np.array(data, dtype=np.float)
+    def plot_signal_and_segments(self, p):
+        t, frame_shift = self.utilities()
+        p.plot(t, self.data)
 
-frame_duration = 30
-overlap_rate = 0.0
-#iss = SpeechDetector(data, fs, frame_duration, overlap_rate)
-#labeled_frames, frame_list = iss.isSpeech()
-#f=Frame(data, fs, frame_duration, overlap_rate)
+        self.plot_segments(t, frame_shift, p)
+        p.legend(['Signal', 'Speech'])
+        p.set_title(self.title_plot)
 
-#iss = ReadTextGrid("C:\\Users\\jacop\\PycharmProjects\\Speech-activity-detection\\Data\\Annotations\\Female", frame_duration, f.getNumFrames() )
-#labeled_frames , num = iss.getLabels(name + ".TextGrid")
+    def plot_feature(self,feature, p):
+        Ts = 1 / self.fs
+        time = []
+        for i in range(len(feature)):
+            time.append((i * self.frame_length) * Ts * 1000)
+        p.plot(time, feature)
+
+        t, frame_shift = self.utilities()
+        self.plot_segments(t, frame_shift, p)
+        p.legend(['feature', 'Speech prediction'])
+
+    def plot_mfcc(self, mfcc, p):
+        display.specshow(mfcc.T, x_axis='time', ax = p)
+        p.set_title('MFCC')
 
 
-#print(len(labeled_frames),f.getNumFrames())
-#pf = PlotFrames(data, fs, frame_duration, overlap_rate, labeled_frames, name)
-#pf.plot_signal_and_segments()
 
