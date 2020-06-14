@@ -1,0 +1,2 @@
+FILELENGTH = 8
+DIR_LOCATION = str(__file__)[:-FILELENGTH]
