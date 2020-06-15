@@ -67,7 +67,11 @@ class LoadData():
             magnitude_frames = frames.Magnitude()
             mfcc_frames = frames.MFCC()
 
+            # print('---')
+            #print(annotation_path)
+
             labeled_frames, num_frame = loadAnnotation.getLabels(annotation_path, frames.getNumFrames(), useRoot=False)
+
             #print('---')
             #print(frames.getNumFrames() - num_frame, audio_path, annotation_path)
             #print(frames.getNumFrames() - num_frame)

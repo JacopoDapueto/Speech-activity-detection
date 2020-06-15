@@ -113,8 +113,6 @@ class PlotsPage(tk.Frame):
         self.tab_ENERGY = ttk.Frame(self.tabControl)
         self.frame_plot_ENERGY = create_frame_plot(tab=self.tab_ENERGY)
 
-        self.tab_MFCC = ttk.Frame(self.tabControl)
-        self.frame_plot_MFCC = create_frame_plot(tab=self.tab_MFCC)
 
         self.tabControl.place(x=200, y=20)
         self.tabControl.add(self.tab_classifier, text='Speech/Nonspeech')
@@ -122,7 +120,6 @@ class PlotsPage(tk.Frame):
         self.tabControl.add(self.tab_MAG, text='MAGNITUDE')
         self.tabControl.add(self.tab_HTN, text='HTN')
         self.tabControl.add(self.tab_ENERGY, text='ENERGY')
-        self.tabControl.add(self.tab_MFCC, text='MFCC')
 
         self.plot_button = tk.Button(master=self, text='Plot', activebackground=BOTTON_ACTIVATION_COLOR,
                                      height=1, width=10, relief='groove',
@@ -160,7 +157,7 @@ class PlotsPage(tk.Frame):
         self.frame_plot_MAG = update_frame_plot(self.frame_plot_MAG, tab=self.tab_MAG)
         self.frame_plot_HTN = update_frame_plot(self.frame_plot_HTN, tab=self.tab_HTN)
         self.frame_plot_ENERGY = update_frame_plot(self.frame_plot_ENERGY, tab=self.tab_ENERGY)
-        self.frame_plot_MFCC = update_frame_plot(self.frame_plot_MFCC, tab=self.tab_MFCC)
+
 
         if self.file_path == "":
             popup_message("First of all upload the audio file!")
@@ -238,12 +235,5 @@ class PlotsPage(tk.Frame):
         ax5.set_ylabel('energy')
         plotframe.plot_feature(frames.Energy(), ax5)
         plot_on_tab(figure=figure5, master=self.frame_plot_ENERGY)
-
-
-        figure6 = plt.Figure(figsize=(9, 5), dpi=90)
-        ax6 = figure6.add_subplot(111)
-        plotframe.plot_mfcc(frames.MFCC(), ax6)
-        plot_on_tab(figure=figure6, master=self.frame_plot_MFCC)
-        #plt.colorbar(ax=ax6)
 
 

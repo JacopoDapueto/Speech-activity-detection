@@ -28,8 +28,8 @@ class Network():
         self.metrics = metrics
 
     def createModel(self):
-        # Add a Dense layer with 32 neurons, with relu as activation function and input dimension equal to the number of features
-        self.model.add(Dense(32, input_shape=(self.input_shape,), activation='relu'))
+        # Add a Dense layer with 28 neurons, with relu as activation function and input dimension equal to the number of features
+        self.model.add(Dense(28, input_shape=(self.input_shape,), activation='relu'))
         # To produce the output Add a Dense layer with 1 neurons, with sigmoid as activation function
         self.model.add(Dense(1, activation='sigmoid'))
 
@@ -42,9 +42,9 @@ class Network():
         cp_callback = ModelCheckpoint(self.checkpoint_path, monitor='val_loss', save_weights_only=True, verbose=1)
         return es_callback, cp_callback
 
-    def trainModel(self, X, y, batch_size= 128, epochs= 100):
+    def trainModel(self, X, y, batch_size= 128, epochs= 300):
         es_callback, cp_callback = self.createCheckPoint()
-        self.history = self.model.fit(X, y, batch_size=batch_size, epochs=epochs, shuffle=True, validation_split=0.3, callbacks=[es_callback, cp_callback])
+        self.history = self.model.fit(X, y, batch_size=batch_size, epochs=epochs, shuffle=True, validation_split=0.3, callbacks=[es_callback, cp_callback], verbose=0)
         self.trained = True
 
     def balance_accuracy(self, y_pred, ytest):
