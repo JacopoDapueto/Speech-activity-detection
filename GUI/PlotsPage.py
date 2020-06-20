@@ -147,9 +147,9 @@ class PlotsPage(tk.Frame):
     def show_accuracy(self, value):
         font = tkfont.Font(family='Helvetica', size=10)
         self.accuracy_text_label = tk.Message(master=self, relief='groove', width=105,
-                                                textvariable=self.accuracy_text_var, font=font).place(x=70, y=450)
+                                                textvariable=self.accuracy_text_var, font=font).place(x=70, y=440)
 
-        self.accuracy_text_var.set(str(np.round(value, decimals=3) * 100) + "%")
+        self.accuracy_text_var.set(str(np.round(value, decimals=4) * 100) + "%")
 
     def plot_signal(self):
         self.frame_plot_classifier = update_frame_plot(self.frame_plot_classifier, tab=self.tab_classifier)
@@ -172,11 +172,15 @@ class PlotsPage(tk.Frame):
 
         if self.annotation_path != "":
             loadAnnotation = ReadTextGrid(Utils.DIR_LOCATION, CONFIG.FRAMEDURATION)
-            labeled_ground_truth, num_ground_truth = loadAnnotation.getLabels(self.annotation_path, frames.getNumFrames(), useRoot=False)
+            try:
+                labeled_ground_truth, num_ground_truth = loadAnnotation.getLabels(self.annotation_path, frames.getNumFrames(), useRoot=False)
+            except Exception:
+                popup_message("Wrong annotation file!")
+                return
             plotAnnotation = PlotFrames(data, fs, CONFIG.FRAMEDURATION, CONFIG.OVERLAPRATE, labeled_ground_truth, "Ground truth")
 
             if frames.getNumFrames() - num_ground_truth > 4:
-                popup_message("The annotation file is not compatible con the audio file!")
+                popup_message("Wrong annotation file!")
             else:
                 for _ in range(frames.getNumFrames() - num_ground_truth):
                     # there are more due to approximation, it can be removed
@@ -215,7 +219,7 @@ class PlotsPage(tk.Frame):
         figure3 = plt.Figure(figsize=(9, 5), dpi=90)
         ax3 = figure3.add_subplot(111)
         ax3.set_title('Short-Time Magnitude', fontsize=20)
-        ax3.set_xlabel('frame_time')
+        ax3.set_xlabel('time')
         ax3.set_ylabel('magnitude')
         plotframe.plot_feature(frames.Magnitude(), ax3)
         plot_on_tab(figure=figure3, master=self.frame_plot_MAG)
@@ -223,7 +227,7 @@ class PlotsPage(tk.Frame):
         figure4 = plt.Figure(figsize=(9, 5), dpi=90)
         ax4 = figure4.add_subplot(111)
         ax4.set_title('Short-Time Harmonic-To-Noise Ratio', fontsize=20)
-        ax4.set_xlabel('frame_time')
+        ax4.set_xlabel('time')
         ax4.set_ylabel('htn')
         plotframe.plot_feature(frames.HTN(), ax4)
         plot_on_tab(figure=figure4, master=self.frame_plot_HTN)
@@ -231,7 +235,7 @@ class PlotsPage(tk.Frame):
         figure5 = plt.Figure(figsize=(9, 5), dpi=90)
         ax5 = figure5.add_subplot(111)
         ax5.set_title('Short-Time Energy', fontsize=20)
-        ax5.set_xlabel('frame_time')
+        ax5.set_xlabel('time')
         ax5.set_ylabel('energy')
         plotframe.plot_feature(frames.Energy(), ax5)
         plot_on_tab(figure=figure5, master=self.frame_plot_ENERGY)

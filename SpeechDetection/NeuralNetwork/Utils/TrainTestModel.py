@@ -33,7 +33,10 @@ print("Training...")
 net.trainModel(X_train, y_train)
 
 # test performances
-print("Test balanced accuracy:{} ".format(net.testModel(X_test, y_test)))
+print("Test balanced accuracy:{}% ".format(net.testModel(X_test, y_test) * 100))
+precision, recall = net.getPrecisionRecall(X_test, y_test)
+print("Test NONSPEECH Precision:{} and Recall:{} ".format(precision[0], recall[0]))
+print("Test SPEECH Precision:{} and Recall:{} ".format(precision[1], recall[1]))
 
 # plot history
 net.plotHistory()

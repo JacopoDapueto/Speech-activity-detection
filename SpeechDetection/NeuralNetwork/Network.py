@@ -4,7 +4,7 @@ import os
 import tensorflow as tf
 import numpy as np
 import keras
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score, precision_recall_fscore_support
 from keras.models import model_from_json
 from  tensorflow.keras import regularizers
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -50,11 +50,21 @@ class Network():
     def balance_accuracy(self, y_pred, ytest):
         return balanced_accuracy_score(y_pred, ytest)
 
+    def precisionAndRecall(self, y_pred, y_test):
+        precision, recall, _, _ =precision_recall_fscore_support(y_test, y_pred)
+        return precision, recall
+
     def testModel(self, Xtest, ytest):
         if not self.trained:
             raise Exception("The network is not trained yet!")
         y_pred = (self.model.predict(Xtest) > 0.5).astype("int32")
         return self.balance_accuracy(y_pred, ytest)
+
+    def getPrecisionRecall(self, Xtest, ytest):
+        if not self.trained:
+            raise Exception("The network is not trained yet!")
+        y_pred = (self.model.predict(Xtest) > 0.5).astype("int32")
+        return self.precisionAndRecall(y_pred, ytest)
 
     def predictLabel(self, data):
         """
@@ -88,6 +98,7 @@ class Network():
         self.saveModel()
         self.saveWeights()
         print("Network saved correctely!")
+
     def loadNetwork(self):
         self.createModel()
         self.loadWeights()

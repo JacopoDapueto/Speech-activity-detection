@@ -23,7 +23,7 @@ class Frame():
         frame_list = lb.util.frame(x=self.data, frame_length=self.frame_length, hop_length=self.frame_shift, axis=0)  # matrix: each row represents a frame
         return frame_list
 
-    def windowed_frames(self, duration=32, overlap_rate=0.0, window_type="hamm"):
+    def windowed_frames(self, duration=32, overlap_rate=0.0, window_type="hamming"):
         """
         The audio is divided into frames and a windows is applied to each of them
 
@@ -60,12 +60,12 @@ class Frame():
 
     def ZCR(self):
         # return the zero crossing rate for each frame
-        frameWind_list = self.frame_list #self.windowed_frame_list
+        frameWind_list = self.frame_list
         return [np.sum(abs(np.diff(np.sign(frameWind - np.mean(frameWind, axis=0))))) / (2 * self.frame_length) for frameWind in frameWind_list]
 
     def Energy(self):
         # return the energy for each frame
-        frameWind_list = self.frame_list #self.windowed_frame_list #self.frame_list
+        frameWind_list = self.windowed_frame_list #self.frame_list
         return [np.sum(frameWind ** 2, axis=0) for frameWind in frameWind_list]
 
     def MSE_Energy(self):

@@ -113,7 +113,7 @@ test_b = plt.bar(2 * index, np.mean(test_error * 100, axis=1), bar_width, alpha=
 
 time_b = plt.bar(2 * index + bar_width, np.mean(time_ex, axis=1), bar_width, alpha=opacity, color='r', label='time execution')
 
-plt.xlabel('optimizer')
+plt.xlabel('loss function')
 plt.ylabel('Scores')
 plt.title('means wrt loss')
 plt.xticks(2 * index + bar_width, [l for l in loss])
